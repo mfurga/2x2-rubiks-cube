@@ -2,9 +2,24 @@
 'use strict';
 
 const CUBE_FACES = ['up', 'down', 'left', 'right', 'front', 'back'];
+const CUBE_COLORS = ['red', 'orange', 'blue', 'green', 'white', 'yellow'];
 const CUBE_NOTATIONS = [
   'up', 'down', 'right', 'left', 'front', 'back', 'upR', 'downR', 'rightR', 'leftR', 'frontR', 'backR'
 ];
+const CUBE_NOTATIONS_REAL = {
+  'up': 'U',
+  'down': 'D',
+  'right': 'R',
+  'left': 'L',
+  'front': 'F',
+  'back': 'B',
+  'upR': 'U\'',
+  'downR': 'D\'',
+  'rightR': 'R\'',
+  'leftR': 'L\'',
+  'frontR': 'F\'',
+  'backR': 'B\''
+};
 
 class Cube {
   constructor(faces) {
@@ -24,17 +39,59 @@ class Cube {
     return this.faces[face][id];
   }
   
-  is_solved() {
+  static isSolved(faces) {
     for (var i = 0; i < CUBE_FACES.length; i++) {
       var face = CUBE_FACES[i];
-      var color = this.faces[face][0];
-
-      if (color != this.faces[face][1] || color != this.faces[face][2] || color != this.faces[face][3])
+      var color = faces[face][0];
+      if (color != faces[face][1] || color != faces[face][2] || color != faces[face][3])
         return false;
     }
     return true;
   }
 
+  static isEqual(faces1, faces2) {
+    for (var i = 0; i < CUBE_FACES.length; i++) {
+      var face = CUBE_FACES[i];
+      for (var j = 0; j < 4; j++) {
+        if (faces1[face][j] != faces2[face][j])
+          return false;
+      }
+    }
+    return true;
+  }
+
+  /*
+   * Generates `times` random operations on the cube.
+   * @param {Number}   times    Number of operations to be performed.
+   * @param {Boolean}  verbose  Show performed operations.
+   */
+  generateRandomState(times, verbose=false) {
+    for (var i = 0; i < times; i++) {
+      var notation = CUBE_NOTATIONS[Math.floor(Math.random() * CUBE_NOTATIONS.length)];
+      if (verbose)
+        console.log(CUBE_NOTATIONS_REAL[notation]);
+      this[notation](false);
+    }
+    this.draw();
+  }
+
+  /*
+   * Generates the solved state on the cube.
+   */
+  generateSolvedState() {
+    for (var i = 0; i < CUBE_FACES.length; i++) {
+      var face = CUBE_FACES[i];
+      for (var j = 0; j < 4; j++) {
+        this.setColor(face, j, CUBE_COLORS[i]);
+      }
+    }
+    this.commit();
+    this.draw();
+  }
+  
+  /*
+   * Draws colors on the cube using faces.
+   */
   draw() {
     document.querySelectorAll('.field').forEach((field) => {
       field.dataset.color = this.getColor(field.parentNode.id, field.dataset.id);
@@ -59,7 +116,7 @@ class Cube {
     this.prefaces[face] = rotated;
   }
 
-  up() {
+  up(draw=true) {
     // right face 
     this.setColor('right', 0, this.getColor('back', 0));
     this.setColor('right', 1, this.getColor('back', 1));
@@ -78,11 +135,11 @@ class Cube {
 
     this.rotateFace('up');
 
-    this.commit(); 
-    //this.draw();
+    this.commit();
+    if (draw) this.draw();
   }
 
-  upR() {
+  upR(draw=true) {
     // right face
     this.setColor('right', 0, this.getColor('front', 0));
     this.setColor('right', 1, this.getColor('front', 1));
@@ -102,10 +159,10 @@ class Cube {
     this.rotateFaceR('up');
 
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 
-  down() {
+  down(draw=true) {
     // right face
     this.setColor('right', 2, this.getColor('front', 2));
     this.setColor('right', 3, this.getColor('front', 3));
@@ -125,10 +182,10 @@ class Cube {
     this.rotateFace('down');
 
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 
-  downR() {
+  downR(draw=true) {
     // right face
     this.setColor('right', 2, this.getColor('back', 2));
     this.setColor('right', 3, this.getColor('back', 3));
@@ -148,10 +205,10 @@ class Cube {
     this.rotateFaceR('down');
 
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 
-  right() {
+  right(draw=true) {
     // up face
     this.setColor('up', 1, this.getColor('front', 1)); 
     this.setColor('up', 3, this.getColor('front', 3)); 
@@ -171,10 +228,10 @@ class Cube {
     this.rotateFace('right');
 
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 
-  rightR() {
+  rightR(draw=true) {
     // up face
     this.setColor('up', 1, this.getColor('back', 2));
     this.setColor('up', 3, this.getColor('back', 0)); 
@@ -194,10 +251,10 @@ class Cube {
     this.rotateFaceR('right');
 
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 
-  left() {
+  left(draw=true) {
     // up face
     this.setColor('up', 0, this.getColor('back', 3));
     this.setColor('up', 2, this.getColor('back', 1));
@@ -217,10 +274,10 @@ class Cube {
     this.rotateFace('left');
 
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 
-  leftR() {
+  leftR(draw=true) {
     // up face
     this.setColor('up', 0, this.getColor('front', 0));
     this.setColor('up', 2, this.getColor('front', 2));
@@ -240,10 +297,10 @@ class Cube {
     this.rotateFaceR('left');
 
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 
-  front() {
+  front(draw=true) {
     // up face
     this.setColor('up', 2, this.getColor('left', 3)); 
     this.setColor('up', 3, this.getColor('left', 1)); 
@@ -263,10 +320,10 @@ class Cube {
     this.rotateFace('front');
 
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 
-  frontR() {
+  frontR(draw=true) {
     // up face
     this.setColor('up', 2, this.getColor('right', 0)); 
     this.setColor('up', 3, this.getColor('right', 2)); 
@@ -286,10 +343,10 @@ class Cube {
     this.rotateFaceR('front');
 
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 
-  back() {
+  back(draw=true) {
     // up face
     this.setColor('up', 0, this.getColor('right', 1));
     this.setColor('up', 1, this.getColor('right', 3));
@@ -309,10 +366,10 @@ class Cube {
     this.rotateFace('back');
   
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 
-  backR() {
+  backR(draw=true) {
     // up face
     this.setColor('up', 0, this.getColor('left', 2));
     this.setColor('up', 1, this.getColor('left', 0));
@@ -332,7 +389,7 @@ class Cube {
     this.rotateFaceR('back');
 
     this.commit();
-    //this.draw();
+    if (draw) this.draw();
   }
 }
 
