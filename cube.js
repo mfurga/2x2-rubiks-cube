@@ -1,8 +1,6 @@
 // Copyright (c) 2019 Mateusz Furga <matfurga@gmail.com>
 'use strict';
 
-const CUBE_FACES = ['up', 'down', 'left', 'right', 'front', 'back'];
-const CUBE_COLORS = ['red', 'orange', 'blue', 'green', 'white', 'yellow'];
 const CUBE_NOTATIONS = [
   'up', 'down', 'right', 'left', 'front', 'back', 'upR', 'downR', 'rightR', 'leftR', 'frontR', 'backR'
 ];
@@ -21,51 +19,101 @@ const CUBE_NOTATIONS_REAL = {
   'backR': 'B\''
 };
 
+const CUBE_NOTATIONS_REAL_REVERSE = {
+  'U': 'up',
+  'D': 'down',
+  'R': 'right',
+  'L': 'left',
+  'F': 'front',
+  'B': 'back',
+  'U\'': 'upR',
+  'D\'': 'downR',
+  'R\'': 'rightR',
+  'L\'': 'leftR',
+  'F\'': 'frontR',
+  'B\'': 'backR'
+}
+
 class Cube {
+  #faces;
+  #facesCopy;
+  
+  // cube colors
+  static C_RED    = 0;
+  static C_ORANGE = 1;
+  static C_BLUE   = 2;
+  static C_GREEN  = 3;
+  static C_WHITE  = 4;
+  static C_YELLOW = 5;
+
+  static COLORS = ['red', 'orange', 'blue', 'green', 'white', 'yellow'];
+  static FACES  = ['up' , 'down'  , 'left', 'right', 'front', 'back'];
+
   constructor(faces) {
-    this.faces = JSON.parse(JSON.stringify(faces));
-    this.prefaces = JSON.parse(JSON.stringify(faces));
+    this.#faces = JSON.parse(JSON.stringify(faces));
+    this.#facesCopy = JSON.parse(JSON.stringify(faces));
   }
 
-  commit() {
-    this.faces = JSON.parse(JSON.stringify(this.prefaces)); 
-  }
+  /*
+   * Commits the current state.
+   */
+  #commit = () => {
+    this.#faces = JSON.parse(JSON.stringify(this.#facesCopy)); 
+  };
 
-  setColor(face, id, color) {
-    this.prefaces[face][id] = color;
-  }
-
-  getColor(face, id) {
-    return this.faces[face][id];
+  getFaces() {
+    return this.#faces;
   }
   
+  /*
+   * Sets a color in the given position.
+   */
+  setColor(face, id, color) {
+    this.#facesCopy[face][id] = color;  
+  }
+  
+  /*
+   * Sets a color in the given position and commits changes.
+   */
+  setColorAndCommit(face, id, color) {
+    this.#facesCopy[face][id] = color;
+    this.#commit();
+  }
+
+  /*
+   * Gets a color in the given position.
+   */
+  getColor(face, id) {
+    return this.#faces[face][id];
+  }
+ 
+  /*
+   * Checks if the given faces are solved.
+   */
   static isSolved(faces) {
-    for (var i = 0; i < CUBE_FACES.length; i++) {
-      var face = CUBE_FACES[i];
-      var color = faces[face][0];
-      if (color != faces[face][1] || color != faces[face][2] || color != faces[face][3])
+    for (const f of Cube.FACES) {
+      if (faces[f][0] != faces[f][1] || faces[f][0] != faces[f][2] || faces[f][0] != faces[f][3])
         return false;
     }
     return true;
   }
-
-  static isEqual(faces1, faces2) {
-    for (var i = 0; i < CUBE_FACES.length; i++) {
-      var face = CUBE_FACES[i];
-      for (var j = 0; j < 4; j++) {
-        if (faces1[face][j] != faces2[face][j])
+  
+  /*
+   * Checks if `face1` and `face2` are equal.
+   */
+  static isEqual(face1, face2) {
+    for (const f of Cube.FACES) {
+      for (var i = 0; i < 4; i++)
+        if (face1[f][i] != face2[f][i])
           return false;
-      }
     }
     return true;
   }
 
   /*
    * Generates `times` random operations on the cube.
-   * @param {Number}   times    Number of operations to be performed.
-   * @param {Boolean}  verbose  Show performed operations.
    */
-  generateRandomState(times, verbose=false) {
+  doRandomPermutation(times, verbose=false) {
     for (var i = 0; i < times; i++) {
       var notation = CUBE_NOTATIONS[Math.floor(Math.random() * CUBE_NOTATIONS.length)];
       if (verbose)
@@ -76,16 +124,30 @@ class Cube {
   }
 
   /*
+   * Performs the given `permutation` on the cube.
+   */
+  doPermutation(permutation) {
+    for (var i = 0; i < permutation.length; i++) {
+      if (permutation[i + 1] !== undefined && permutation[i + 1] === '\'') {
+        cube[CUBE_NOTATIONS_REAL_REVERSE[permutation[i] + permutation[i + 1]]](false);
+        i += 1;
+        continue;
+      }
+      if (CUBE_NOTATIONS_REAL_REVERSE[permutation[i]] !== undefined)
+        cube[CUBE_NOTATIONS_REAL_REVERSE[permutation[i]]](false);
+    }
+    this.draw();
+  }
+
+  /*
    * Generates the solved state on the cube.
    */
   generateSolvedState() {
-    for (var i = 0; i < CUBE_FACES.length; i++) {
-      var face = CUBE_FACES[i];
-      for (var j = 0; j < 4; j++) {
-        this.setColor(face, j, CUBE_COLORS[i]);
-      }
+    for (const f of Cube.FACES) {
+      for (var i = 0; i < 4; i++)
+        this.setColor(f, i, Cube.FACES.indexOf(f));
     }
-    this.commit();
+    this.#commit();
     this.draw();
   }
   
@@ -94,26 +156,32 @@ class Cube {
    */
   draw() {
     document.querySelectorAll('.field').forEach((field) => {
-      field.dataset.color = this.getColor(field.parentNode.id, field.dataset.id);
+      field.dataset.color = Cube.COLORS[this.getColor(field.parentNode.id, field.dataset.id)];
     });
   }
-
+  
+  /*
+   * Rotates the given face to the right.
+   */
   rotateFace(face) {
     var rotated = [];
-    rotated[0] = this.faces[face][2];
-    rotated[1] = this.faces[face][0];
-    rotated[2] = this.faces[face][3];
-    rotated[3] = this.faces[face][1];
-    this.prefaces[face] = rotated;
+    rotated[0] = this.#faces[face][2];
+    rotated[1] = this.#faces[face][0];
+    rotated[2] = this.#faces[face][3];
+    rotated[3] = this.#faces[face][1];
+    this.#facesCopy[face] = rotated;
   }
-
+  
+  /*
+   * Rotates the given face to the left.
+   */
   rotateFaceR(face) {
     var rotated = [];
-    rotated[0] = this.faces[face][1];
-    rotated[1] = this.faces[face][3];
-    rotated[2] = this.faces[face][0];
-    rotated[3] = this.faces[face][2];
-    this.prefaces[face] = rotated;
+    rotated[0] = this.#faces[face][1];
+    rotated[1] = this.#faces[face][3];
+    rotated[2] = this.#faces[face][0];
+    rotated[3] = this.#faces[face][2];
+    this.#facesCopy[face] = rotated;
   }
 
   up(draw=true) {
@@ -135,7 +203,7 @@ class Cube {
 
     this.rotateFace('up');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -158,7 +226,7 @@ class Cube {
   
     this.rotateFaceR('up');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -181,7 +249,7 @@ class Cube {
 
     this.rotateFace('down');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -204,7 +272,7 @@ class Cube {
 
     this.rotateFaceR('down');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -227,7 +295,7 @@ class Cube {
 
     this.rotateFace('right');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -250,7 +318,7 @@ class Cube {
 
     this.rotateFaceR('right');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -273,7 +341,7 @@ class Cube {
 
     this.rotateFace('left');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -296,7 +364,7 @@ class Cube {
 
     this.rotateFaceR('left');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -319,7 +387,7 @@ class Cube {
  
     this.rotateFace('front');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -342,7 +410,7 @@ class Cube {
     
     this.rotateFaceR('front');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -365,7 +433,7 @@ class Cube {
 
     this.rotateFace('back');
   
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 
@@ -388,7 +456,7 @@ class Cube {
 
     this.rotateFaceR('back');
 
-    this.commit();
+    this.#commit();
     if (draw) this.draw();
   }
 }
