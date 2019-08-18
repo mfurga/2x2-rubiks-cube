@@ -86,6 +86,50 @@ class Cube {
   getColor(face, id) {
     return this.#faces[face][id];
   }
+
+  #printShortestPath = (state, start, visited) => {
+    var res = new Array();
+    while (!Cube.isEqual(state, start)) {
+      res.push(visited.get(state)[1]);
+      state = visited.get(state)[0];
+    }
+    for (const notation of res.reverse())
+      console.log(notation);
+  };
+ 
+  /*
+   * Solves the cube. It uses the breadth first search algorithm.
+   * TODO: Change the algorithm to something better :>
+   */
+  solve() {
+    var queue = new Array();
+    var visited = new Map();
+    var start = this.#faces;
+
+    queue.push(this.#faces);
+    visited.set(this.#faces, [this.#faces, undefined]);
+
+    while (queue.length > 0) {
+      var v = queue.shift();
+
+      for (const notation of CUBE_NOTATIONS) {
+        var u = new Cube(v);
+        u[notation](false);
+  
+        if (visited.has(u.getFaces()))
+          continue;
+
+        queue.push(u.getFaces());
+        visited.set(u.getFaces(), [v, CUBE_NOTATIONS_REAL[notation]]);
+
+        if (Cube.isSolved(u.getFaces())) {
+          this.#printShortestPath(u.getFaces(), start, visited);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
  
   /*
    * Checks if the given faces are solved.
