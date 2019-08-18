@@ -28,7 +28,7 @@ window.addEventListener('load', () => {
 
   // Generate the random state by the URL parameter.
   if (urlParams.has('rand')) {
-    cube.generateRandomState(urlParams.get('rand'));
+    cube.doRandomPermutation(urlParams.get('rand'));
   }
 
   var fields = document.querySelectorAll('.field');
